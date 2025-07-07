@@ -1,88 +1,95 @@
 # AWS-Docs-AI-Platform
 
-The AWS-Docs-AI-Platform is a custom-built Large Language Model (LLM) stack developed entirely from scratch using documentation sourced from AWS public technical resources. It is designed for regulated industries such as banking and insurance, where pretrained external models cannot be used due to data compliance and security restrictions.
+The AWS-Docs-AI-Platform is a secure, enterprise-grade framework for building and orchestrating domain-specific large language models (LLMs) using AWS documentation as the foundational training corpus. It is designed for highly regulated industries, such as banking, where pretrained models cannot be used due to compliance, auditability, and data traceability concerns.
 
-This project demonstrates the creation of a secure, auditable, and domain-specific LLM pipeline that spans document ingestion, tokenizer training, transformer model implementation, distributed training, and production-grade inference deployment using native AWS infrastructure.
+This platform consists of two independently operable but tightly integrated subsystems:
 
-## Project Objectives
+1. **Custom LLM Builder (`aws-docs-llm-builder`)**  
+   A fully auditable LLM development pipeline from tokenizer to model training and inference deployment.
 
-- Build a domain-specific LLM from scratch without using any third-party pretrained models
-- Train on AWS documentation to create an internal assistant for AWS infrastructure, security, and DevOps queries
-- Fully control tokenizer, architecture, and training process for auditability
-- Deploy the model using secure, scalable, and observable AWS-native services
-- Ensure compliance with internal enterprise standards on traceability, model lineage, and explainability
+2. **Agentic AI Orchestration Framework (`aws-docs-agentic-ai-platform`)**  
+   A modular, CrewAI-style platform that enables multi-agent collaboration powered by the LLMs built in the first subsystem.
 
-## Dataset Pipeline
+---
 
-The training dataset is constructed from publicly available AWS documentation covering services such as EC2, S3, IAM, Lambda, and more.
+## Architecture Summary
 
-Steps include:
+### 1. aws-docs-llm-builder
 
-- Document scraping from `https://docs.aws.amazon.com/`
-- Cleaning and normalization (HTML → plain text)
-- Section-based chunking (context windows of 512 to 2048 tokens)
-- Deduplication and token counting for training data sizing
+This module is responsible for:
 
-The estimated training corpus contains over 1.5 billion tokens after processing.
+- Scraping and processing AWS documentation
+- Training custom tokenizers
+- Designing and training GPT-style models from scratch (e.g., 124M to 1.3B+ parameters)
+- Supporting both unified and per-service micro-model variants
+- Hosting models via vLLM or SageMaker endpoints
+- Tracking compliance data, lineage manifests, and evaluation metrics
 
-## Tokenizer and Model Design
+Use Cases:
+- Standalone LLM APIs for AWS-aware internal tools
+- Secure model infrastructure for internal research
+- Model backends for downstream agentic systems
 
-- Custom tokenizer trained using SentencePiece or Hugging Face Tokenizers
-- Vocabulary size: 32,000 tokens
-- Architecture: GPT-style causal decoder-only transformer
-- Model size: 1.3 billion parameters
-- Configuration: 24 transformer layers, 2048 hidden size, 32 attention heads
-- Context length: 2048 tokens
-- Activation function: GELU
+See `aws-docs-llm-builder/README.md` for implementation details.
 
-## Training Strategy
+---
 
-- Training framework: PyTorch with DeepSpeed ZeRO-3 or Fully Sharded Data Parallel (FSDP)
-- Optimizer: AdamW with weight decay and cosine decay learning rate schedule
-- Mixed-precision (fp16 or bf16) for improved performance
-- Epochs: 3 to 5 passes over the full dataset
-- Checkpointing and resume capability for fault tolerance
+### 2. aws-docs-agentic-ai-platform
 
-Training is executed on AWS infrastructure using:
+This module is responsible for:
 
-- Amazon SageMaker Training Jobs with p4d or Trn1 instances
-- Model checkpoints saved to Amazon S3
+- Defining and managing specialized LLM agents (e.g., Risk Advisor, IAM Auditor)
+- Routing tasks to the appropriate model (unified or service-specific)
+- Orchestrating multi-agent workflows using planners and routers
+- Deploying secure, traceable API-based agent endpoints
+- Logging every interaction for traceability and control
 
-## Inference and Serving
+Use Cases:
+- FinOps assistant
+- Cloud compliance bot
+- Developer DevOps copilot
+- Multi-agent collaborative cloud infrastructure reasoning
 
-The trained model is served through a high-performance inference stack with secure access and observability.
+See `aws-docs-agentic-ai-platform/README.md` for implementation details.
 
-- Inference Engine: vLLM or Triton Inference Server
-- Deployment target: AWS ECS or EKS
-- API access via Amazon API Gateway with Cognito-based authentication
-- Monitoring and logging with Amazon CloudWatch
-- Optional: retrieval augmentation via OpenSearch or pgvector
+---
 
-## Evaluation and Monitoring
+## Why This Architecture
 
-Evaluation includes:
+- **Compliance**: Models are trained entirely from known, auditable documentation sources
+- **Modularity**: The agentic layer allows for role-based composition, isolation, and explainability
+- **Scalability**: Unified models can support broad use cases; micro-models optimize specific domains
+- **Security**: Deployed on VPC-bound AWS infrastructure with IAM-controlled tool access
+- **Auditability**: Every dataset, token, parameter, and decision path can be traced and versioned
 
-- Held-out test questions based on AWS service documentation
-- Perplexity measurement and prompt-based accuracy checks
-- Evaluation metrics logged and visualized through Weights & Biases or custom dashboards
+---
 
-## Compliance and Auditability
+## Example Workflow
 
-This platform is designed for environments where explainability and traceability are mandatory:
+1. A developer submits a high-level task:  
+   _“Generate a compliant IAM policy for multi-region S3 access.”_
 
-- Model lineage tracked via signed metadata and training manifests
-- Tokenizer, training data, model weights, and configs are version-controlled
-- IAM-based access restrictions applied to all training and inference workflows
-- All data encrypted in transit and at rest using AWS KMS
-- CloudTrail and CloudWatch used for activity logging and audit trails
+2. The `planner` component in the agentic layer routes this to:
+   - IAM Agent → backed by `iam-llm`
+   - S3 Agent → backed by `s3-llm`
+   - Compliance Agent → applies internal rules
+
+3. The agents consult relevant AWS documentation-derived models, reason independently, and produce artifacts (policy code + commentary).
+
+4. The planner returns a final, validated output to the user, with logs and evaluation traces.
+
+---
 
 ## Roadmap
 
-- Add Retrieval-Augmented Generation (RAG) support with AWS-hosted vector store
-- Deploy fine-tuned micro-models for IAM, EC2, and networking
-- Integrate agentic architecture using LangGraph or CrewAI-style multi-agent orchestration
-- Extend dataset to include internal technical manuals and compliance documentation
+- Add CI/CD workflows for model training and agent updates
+- Add LangGraph-based visual planner for agent interaction
+- Add model version rollback and auto-eval feedback integration
+- Extend training data to internal infrastructure and compliance docs
+
+---
 
 ## License
 
 This project is licensed under the Apache 2.0 License.
+
